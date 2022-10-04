@@ -4,21 +4,18 @@ import tokens from '@contentful/forma-36-tokens';
 import { FieldExtensionSDK } from '@contentful/app-sdk';
 import { v4 as uuid } from 'uuid';
 
-import { Button, Table, FormControl, TextInput, Select } from "@contentful/f36-components";
+import { Button, Table, FormControl,  Select } from "@contentful/f36-components";
 
 import { PlusCircleIcon } from "@contentful/f36-icons";
-import Age from './criteria/Age';
+import ComponentsWrapper from "./ComponentsWrapper";
+
+import {Item,ItemValues} from './itemTypes'
+//import { isArray } from 'util';
 
 interface FieldProps {
     sdk: FieldExtensionSDK;
 }
 
-/** An Item which represents an list item of the repeater app */
-interface Item {
-    id: string;
-    key: string;
-    value: string;
-}
 
 /** A simple utility function to create a 'blank' item
  * @returns A blank `Item` with a uuid
@@ -27,7 +24,7 @@ function createItem(): Item {
     return {
         id: uuid(),
         key: '',
-        value: '',
+        values: [{key:'',value:''}],
     };
 }
 
@@ -39,7 +36,7 @@ function createItem(): Item {
 const Field = (props: FieldProps) => {
     const { valueName = 'Value' } = props.sdk.parameters.instance as any;
     const [items, setItems] = useState<Item[]>([]);
-    const [currentSel, setCurrentSel] = useState<String>('');
+    const [currentSel, setCurrentSel] = useState<string>();
 
     useEffect(() => {
         // This ensures our app has enough space to render
@@ -59,11 +56,7 @@ const Field = (props: FieldProps) => {
     const addNewItem = () => {
         props.sdk.field.setValue([...items, createItem()]);
     };
-    const iselected = (criteria:String): boolean => {
 
-        return (currentSel===criteria)?true:false;
-    
-    }
     /** Creates an `onChange` handler for an item based on its `property`
      * @returns A function which takes an `onChange` event 
     */
@@ -72,7 +65,6 @@ const Field = (props: FieldProps) => {
     ) => {
         const itemList = items.concat();
         const index = itemList.findIndex((i) => i.id === item.id);
-
         itemList.splice(index, 1, { ...item, [property]: e.target.value });
         setCurrentSel(e.target.value);
         props.sdk.field.setValue(itemList);
@@ -80,13 +72,20 @@ const Field = (props: FieldProps) => {
     /** Creates an `onChange` handler for an item based on its `property`
      * @returns A function which takes an `onChange` event 
     */
-     const createOnChangeHandler = (item: Item, property: 'key' | 'value') => (
+     const createOnChangeHandler = (item: Item, property: 'key' | 'values') => (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
+        console.log('onChange',item);
         const itemList = items.concat();
         const index = itemList.findIndex((i) => i.id === item.id);
+        if(Array.isArray(itemList[index][property])) {
+            let idxvalue:number = (itemList[index][property] as ItemValues as any[]).findIndex((j) =>j.key===item.key);
+            (itemList[index][property] as unknown as any[]).splice(idxvalue, 1, { ...item, [property]: e.target.value });
+        }else{
+            itemList.splice(index, 1, { ...item, [property]: e.target.value });
+        }
 
-        itemList.splice(index, 1, { ...item, [property]: e.target.value });
+        
 
         props.sdk.field.setValue(itemList);
     };
@@ -94,9 +93,9 @@ const Field = (props: FieldProps) => {
     const deleteItem = (item: Item) => {
         props.sdk.field.setValue(items.filter((i) => i.id !== item.id));
     };
-    const dataChange=( ftype: String, value:any = null ) => {
-        console.log(ftype, value);
-    };
+    // const dataChange=( ftype: String, value:any = null ) => {
+    //     console.log(ftype, value);
+    // };
     return (
         <div>
             <Table>                
@@ -136,14 +135,15 @@ const Field = (props: FieldProps) => {
                                 </Select></FormControl>
                             </Table.Cell>
                             <Table.Cell>
-                                <FormControl id="value">
-                                    <FormControl.Label>{valueName}</FormControl.Label>
-                                    <TextInput
-                                        name="value"
-                                        value={item.value}
-                                        onChange={createOnChangeHandler(item, 'value')}
-                                        size="small" />
-                                </FormControl>
+                                {/* <FormControl id="value">
+                                *    <FormControl.Label>{valueName}</FormControl.Label>
+                                *    <TextInput
+                                *        name="value"
+                                *        value={item.value}
+                                *        onChange={createOnChangeHandler(item, 'value')}
+                                *        size="small" />
+                                *</FormControl> 
+                                */}
                             </Table.Cell>
                             <Table.Cell align="right">
                                 <EditorToolbarButton
@@ -153,16 +153,12 @@ const Field = (props: FieldProps) => {
                                 />
                             </Table.Cell>
                         </Table.Row>
-                        <Table.Row id="age" hidden={!iselected('age')}>
-                            <Table.Cell>
-                                <FormControl >
-                                        <FormControl.Label>Age ({currentSel})</FormControl.Label>
-                                </FormControl>
-                            </Table.Cell>
-                            <Table.Cell>   
-                                <Age title="hopla" onTextChange={dataChange} /> 
-                            </Table.Cell>                            
-                            </Table.Row>
+                        <FormControl id="value">
+                            <FormControl.Label>{valueName}</FormControl.Label>
+                            {(currentSel!==undefined) &&
+                                    <ComponentsWrapper criteria={currentSel} itemId={item.id} onChange={() =>createOnChangeHandler(item, 'values')} values={item.values} />
+                            }        
+                        </FormControl>               
                         </Table.Body>
                     ))}
             </Table>
