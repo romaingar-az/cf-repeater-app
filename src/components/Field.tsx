@@ -4,12 +4,12 @@ import tokens from '@contentful/forma-36-tokens';
 import { FieldExtensionSDK } from '@contentful/app-sdk';
 import { v4 as uuid } from 'uuid';
 
-import { Button, Table, FormControl,  Select } from "@contentful/f36-components";
+import { Button, Table, FormControl,  Select, Text } from "@contentful/f36-components";
 
 import { PlusCircleIcon } from "@contentful/f36-icons";
 import ComponentsWrapper from "./ComponentsWrapper";
 
-import {Item,ItemValues} from './itemTypes'
+import {Item,ItemValues,ItemValue} from './itemTypes'
 //import { isArray } from 'util';
 
 interface FieldProps {
@@ -24,7 +24,7 @@ function createItem(): Item {
     return {
         id: uuid(),
         key: '',
-        values: [{key:'',value:''}],
+        values: [],
     };
 }
 
@@ -34,9 +34,10 @@ function createItem(): Item {
  * The Field expects and uses a `Contentful JSON field`
  */
 const Field = (props: FieldProps) => {
-    const { valueName = 'Value' } = props.sdk.parameters.instance as any;
+    const { criteriaName = 'Critères' } = props.sdk.parameters.instance as any;
     const [items, setItems] = useState<Item[]>([]);
     const [currentSel, setCurrentSel] = useState<string>();
+    const [currentCriteres,setCurrentCriteres] = useState<string[]>([]);
 
     useEffect(() => {
         // This ensures our app has enough space to render
@@ -45,11 +46,18 @@ const Field = (props: FieldProps) => {
         // Every time we change the value on the field, we update internal state
         props.sdk.field.onValueChanged((value: Item[]) => {
             if (Array.isArray(value)) {
+                //console.log('OLD values : ',props.sdk.field)
+                //console.log('values changed....',value)
                 setItems(value);
             }
         });
     });
-    
+    useState(() => {
+        if( props.sdk.field.getValue()) {
+            const current = props.sdk.field.getValue().map((data:Item)=>data.key);
+            setCurrentCriteres(current);
+        }
+    })
 
 
     /** Adds another item to the list */
@@ -66,28 +74,46 @@ const Field = (props: FieldProps) => {
         const itemList = items.concat();
         const index = itemList.findIndex((i) => i.id === item.id);
         itemList.splice(index, 1, { ...item, [property]: e.target.value });
-        setCurrentSel(e.target.value);
-        props.sdk.field.setValue(itemList);
+        const val = e.target.value;
+        if(val==='select'){
+           setCurrentSel(undefined);
+        }else{
+           setCurrentSel(val);  
+           currentCriteres.push(val)
+           setCurrentCriteres(currentCriteres)
+        }
+       
+        props.sdk.field.setValue(itemList).then((data) => {
+            
+            console.log('values setted', data); 
+          })
+          .catch((err) => {
+            console.log(err);
+          });
     };
     /** Creates an `onChange` handler for an item based on its `property`
      * @returns A function which takes an `onChange` event 
     */
-     const createOnChangeHandler = (item: Item, property: 'key' | 'values') => (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        console.log('onChange',item);
+     const createOnChangeHandler = (repid:string, ftype:string, newitemvalue: ItemValue, itemId:string) => {
+       // console.log('>>> onChange',itemId, repid, newitemvalue);
+       // console.table(items.find((item) => item.id === itemId));
         const itemList = items.concat();
-        const index = itemList.findIndex((i) => i.id === item.id);
-        if(Array.isArray(itemList[index][property])) {
-            let idxvalue:number = (itemList[index][property] as ItemValues as any[]).findIndex((j) =>j.key===item.key);
-            (itemList[index][property] as unknown as any[]).splice(idxvalue, 1, { ...item, [property]: e.target.value });
-        }else{
-            itemList.splice(index, 1, { ...item, [property]: e.target.value });
-        }
-
         
+        const index = itemList.findIndex((i) => i.id === itemId);
 
-        props.sdk.field.setValue(itemList);
+         if(Array.isArray(itemList[index]['values'])) {
+             let idxvalue:number = (itemList[index]['values'] as ItemValues).findIndex((j) =>j.key===newitemvalue.key);
+             //console.log('Values Index : ',idxvalue);
+             if(idxvalue>=0) {
+                 //(itemList[index]['values'] as ItemValues ).splice(idxvalue, 1,newitemvalue);
+             itemList[index]['values'][idxvalue] = newitemvalue;
+             }else{
+                itemList[index]['values'].push(newitemvalue);
+             }
+             //console.log('Changed :',index,itemList[index]);
+
+        }
+         props.sdk.field.setValue(itemList);
     };
     /** Deletes an item from the list */
     const deleteItem = (item: Item) => {
@@ -115,28 +141,35 @@ const Field = (props: FieldProps) => {
                                 id="key"
                                 name="key"
                                 value={item.key}
-                                defaultValue="null"
+                                defaultValue="select"
                                 onChange={createOnChangeSelectHandler(item, 'key')}
                                 >
-                                <Select.Option value="null" >Sélectionnez</Select.Option>
-                                <Select.Option value="age">Age</Select.Option>
-                                <Select.Option value="skin">Type de peau</Select.Option>
-                                <Select.Option value="barber-frequency">Fréquence rasage de barbe</Select.Option>
-                                <Select.Option value="makup-frequency">Fréquence maquillage</Select.Option>
-                                <Select.Option value="sun-frequency">Fréquence exposition soleil</Select.Option>
-                                <Select.Option value="sun-skin">Type de peau au soleil</Select.Option>
-                                <Select.Option value="face-zone">Zone d'application visage</Select.Option>
-                                <Select.Option value="skin-problem">Problème de peau</Select.Option>
-                                <Select.Option value="stain-cause">Raisons des tâches</Select.Option>
-                                <Select.Option value="button-type">Types de boutons</Select.Option>
-                                <Select.Option value="current-treatment">Traitement actuel</Select.Option>
-                                <Select.Option value="texturer">Texture </Select.Option>
-                                <Select.Option value="smell">Odeur à éviter</Select.Option>
+                                <Select.Option value="select" >Sélectionnez</Select.Option>
+                                <Select.Option value="age" hidden={currentCriteres.includes('age')}>Age</Select.Option>
+                                <Select.Option value="pregnant" hidden={currentCriteres.includes('pregnant')}>Femme enceinte</Select.Option>
+                                <Select.Option value="peau" hidden={currentCriteres.includes('peau')}>Type de peau</Select.Option>
+                                <Select.Option value="barber-frequency" hidden={currentCriteres.includes('barber-frequency')}>Fréquence rasage de barbe</Select.Option>
+                                <Select.Option value="makeup" hidden={currentCriteres.includes('makeup')}>Maquillage ?</Select.Option>
+                                <Select.Option value="makeup-frequency" hidden={currentCriteres.includes('makeup-frequency')}>Fréquence maquillage</Select.Option>
+                                <Select.Option value="sun-frequency" hidden={currentCriteres.includes('sun-frequency')}>Fréquence exposition soleil</Select.Option>
+                                <Select.Option value="sun-skin" hidden={currentCriteres.includes('sun-skin')}>Type de peau au soleil</Select.Option>
+                                <Select.Option value="face-zone" hidden={currentCriteres.includes('face-zone')}>Zone d'application visage</Select.Option>
+                                <Select.Option value="skin-problem" hidden={currentCriteres.includes('skin-problem')}>Problème de peau</Select.Option>
+                                <Select.Option value="stain-cause" hidden={currentCriteres.includes('stain-cause')}>Raisons des tâches</Select.Option>
+                                <Select.Option value="button-type" hidden={currentCriteres.includes('button-type')}>Types de boutons</Select.Option>
+                                <Select.Option value="current-treatment" hidden={currentCriteres.includes('current-treatment')}>Traitement actuel</Select.Option>
+                                <Select.Option value="solar-filter" hidden={currentCriteres.includes('solar-filter')}>Filtre Solaire ou crème hydratante ? </Select.Option>
+                                <Select.Option value="texturer" hidden={currentCriteres.includes('texturer')}>Texture </Select.Option>
+                                <Select.Option value="smell" hidden={currentCriteres.includes('smell')}>Odeur à éviter ?</Select.Option>
+                                <Select.Option value="specific-smell" hidden={currentCriteres.includes('specific-smell')}>Odeur spécifique à éviter</Select.Option>
+                                <Select.Option value="cosmetics-reactions" hidden={currentCriteres.includes('cosmetics-reactions')}>Réactions aux produits cosmétiques ?</Select.Option>
+                                <Select.Option value="diy-recipe" hidden={currentCriteres.includes('diy-recipe')}>Réaliser des recettes ?</Select.Option>
+                                <Select.Option value="precautions" hidden={currentCriteres.includes('precautions')}>Des précautions spécifiques ?</Select.Option>
                                 </Select></FormControl>
                             </Table.Cell>
                             <Table.Cell>
                                 {/* <FormControl id="value">
-                                *    <FormControl.Label>{valueName}</FormControl.Label>
+                                *    <FormControl.Label>{criteriaName}</FormControl.Label>
                                 *    <TextInput
                                 *        name="value"
                                 *        value={item.value}
@@ -145,7 +178,7 @@ const Field = (props: FieldProps) => {
                                 *</FormControl> 
                                 */}
                             </Table.Cell>
-                            <Table.Cell align="right">
+                            <Table.Cell align="right" >
                                 <EditorToolbarButton
                                     label="Suppr."
                                     icon="Delete"
@@ -153,12 +186,11 @@ const Field = (props: FieldProps) => {
                                 />
                             </Table.Cell>
                         </Table.Row>
-                        <FormControl id="value">
-                            <FormControl.Label>{valueName}</FormControl.Label>
-                            {(currentSel!==undefined) &&
-                                    <ComponentsWrapper criteria={currentSel} itemId={item.id} onChange={() =>createOnChangeHandler(item, 'values')} values={item.values} />
+                             <>
+                            {(currentCriteres.includes(item.key)) &&
+                                    <ComponentsWrapper criteria={item.key} itemId={item.id} onChange={createOnChangeHandler} values={item.values} />
                             }        
-                        </FormControl>               
+                            </>
                         </Table.Body>
                     ))}
             </Table>
