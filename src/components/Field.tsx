@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { EditorToolbarButton } from '@contentful/forma-36-react-components';
+//import { EditorToolbarButton } from '@contentful/forma-36-react-components';
 import tokens from '@contentful/forma-36-tokens';
 import { FieldExtensionSDK } from '@contentful/app-sdk';
 import { v4 as uuid } from 'uuid';
 
-import { Button, Table, FormControl,  Select, Text } from "@contentful/f36-components";
-
-import { PlusCircleIcon } from "@contentful/f36-icons";
+import { Button, Table, FormControl,  Select ,IconButton } from "@contentful/f36-components";
+import { DeleteIcon, PlusCircleIcon } from "@contentful/f36-icons";
 import ComponentsWrapper from "./ComponentsWrapper";
 
 import {Item,ItemValues,ItemValue} from './itemTypes'
@@ -27,16 +26,22 @@ function createItem(): Item {
         values: [],
     };
 }
-
+function removeItem<T>(arr: Array<T>, value: T): Array<T> { 
+    const index = arr.indexOf(value);
+    if (index > -1) {
+      arr.splice(index, 1);
+    }
+    return arr;
+  }
 /** The Field component is the Repeater App which shows up 
  * in the Contentful field.
  * 
  * The Field expects and uses a `Contentful JSON field`
  */
 const Field = (props: FieldProps) => {
-    const { criteriaName = 'Critères' } = props.sdk.parameters.instance as any;
+    //const { criteriaName = 'Critères' } = props.sdk.parameters.instance as any;
     const [items, setItems] = useState<Item[]>([]);
-    const [currentSel, setCurrentSel] = useState<string>();
+    const [currentSel, setCurrentSel] = useState<string>("select");
     const [currentCriteres,setCurrentCriteres] = useState<string[]>([]);
 
     useEffect(() => {
@@ -51,6 +56,21 @@ const Field = (props: FieldProps) => {
                 setItems(value);
             }
         });
+        if(Array.isArray(props.sdk.field.getValue())) {
+            //console.log('Values >>>', props.sdk.field.getValue() );
+            props.sdk.field.getValue().forEach((element: Item) => {
+                if(props.sdk.entry.fields[element.key]){
+                    //console.log(element.key,props.sdk.entry.fields[element.key]);
+                    if(!props.sdk.entry.fields[element.key].getValue()) {
+                    let vals = Object.entries(element['values']).map(([key, value]) => `${value.key}_${value.value}`);
+                    props.sdk.entry.fields[element.key].setValue(vals);
+                    console.log("Set value : ",element.key,vals);
+                    }
+                }
+            });
+        }else{
+        console.log('Values ?', typeof props.sdk.field.getValue() );
+        }
     });
     useState(() => {
         if( props.sdk.field.getValue()) {
@@ -76,7 +96,7 @@ const Field = (props: FieldProps) => {
         itemList.splice(index, 1, { ...item, [property]: e.target.value });
         const val = e.target.value;
         if(val==='select'){
-           setCurrentSel(undefined);
+           setCurrentSel("select");
         }else{
            setCurrentSel(val);  
            currentCriteres.push(val)
@@ -104,8 +124,7 @@ const Field = (props: FieldProps) => {
          if(Array.isArray(itemList[index]['values'])) {
              let idxvalue:number = (itemList[index]['values'] as ItemValues).findIndex((j) =>j.key===newitemvalue.key);
              //console.log('Values Index : ',idxvalue);
-             if(idxvalue>=0) {
-                 //(itemList[index]['values'] as ItemValues ).splice(idxvalue, 1,newitemvalue);
+             if(idxvalue>=0) {                 
              itemList[index]['values'][idxvalue] = newitemvalue;
              }else{
                 itemList[index]['values'].push(newitemvalue);
@@ -113,10 +132,23 @@ const Field = (props: FieldProps) => {
              //console.log('Changed :',index,itemList[index]);
 
         }
+        var realFieldId = ftype.replace('-','_');
+        if(props.sdk.entry.fields[realFieldId]){
+            //console.log('Fied exist ! ',ftype);
+            //console.log(JSON.stringify(itemList[index]['values'][0]));
+            let vals = Object.entries(itemList[index]['values']).map(([key, value]) => `${value.key}_${value.value}`);
+            //console.log(vals.join(','));
+            props.sdk.entry.fields[realFieldId].setValue(vals);
+            //props.sdk.entry.fields[ftype].
+        }else{
+            //console.log('Fied NOT exist ! ',ftype);
+        }
          props.sdk.field.setValue(itemList);
     };
     /** Deletes an item from the list */
     const deleteItem = (item: Item) => {
+        removeItem(currentCriteres,item.key);
+       
         props.sdk.field.setValue(items.filter((i) => i.id !== item.id));
     };
     // const dataChange=( ftype: String, value:any = null ) => {
@@ -125,16 +157,10 @@ const Field = (props: FieldProps) => {
     return (
         <div>
             <Table>                
-                    {items.map((item) => (
-                        <Table.Body>
+                    {items.map((item,idx) => (
+                        <Table.Body className={(idx%2)?'odd':''}>
                         <Table.Row key={item.id}>
                             <Table.Cell>
-                            {/* 
-                                <FormControl id="key">
-                                    
-                                    <TextInput name="key" value={item.key} onChange={createOnChangeHandler(item, 'key')} />
-                                </FormControl>
-                             */}
                              <FormControl id="key">
                              <FormControl.Label>Type de critère</FormControl.Label>
                             <Select
@@ -147,7 +173,7 @@ const Field = (props: FieldProps) => {
                                 <Select.Option value="select" >Sélectionnez</Select.Option>
                                 <Select.Option value="age" hidden={currentCriteres.includes('age')}>Age</Select.Option>
                                 <Select.Option value="pregnant" hidden={currentCriteres.includes('pregnant')}>Femme enceinte</Select.Option>
-                                <Select.Option value="peau" hidden={currentCriteres.includes('peau')}>Type de peau</Select.Option>
+                                <Select.Option value="skin" hidden={currentCriteres.includes('skin')}>Type de peau</Select.Option>
                                 <Select.Option value="barber-frequency" hidden={currentCriteres.includes('barber-frequency')}>Fréquence rasage de barbe</Select.Option>
                                 <Select.Option value="makeup" hidden={currentCriteres.includes('makeup')}>Maquillage ?</Select.Option>
                                 <Select.Option value="makeup-frequency" hidden={currentCriteres.includes('makeup-frequency')}>Fréquence maquillage</Select.Option>
@@ -167,23 +193,15 @@ const Field = (props: FieldProps) => {
                                 <Select.Option value="precautions" hidden={currentCriteres.includes('precautions')}>Des précautions spécifiques ?</Select.Option>
                                 </Select></FormControl>
                             </Table.Cell>
-                            <Table.Cell>
-                                {/* <FormControl id="value">
-                                *    <FormControl.Label>{criteriaName}</FormControl.Label>
-                                *    <TextInput
-                                *        name="value"
-                                *        value={item.value}
-                                *        onChange={createOnChangeHandler(item, 'value')}
-                                *        size="small" />
-                                *</FormControl> 
-                                */}
-                            </Table.Cell>
                             <Table.Cell align="right" >
-                                <EditorToolbarButton
+                            <IconButton aria-label="Suppr."
+                                    icon={<DeleteIcon />}
+                                    onClick={() => deleteItem(item)} />
+                                {/* <EditorToolbarButton
                                     label="Suppr."
                                     icon="Delete"
                                     onClick={() => deleteItem(item)}
-                                />
+                                /> */}
                             </Table.Cell>
                         </Table.Row>
                              <>

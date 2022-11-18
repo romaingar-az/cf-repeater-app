@@ -20,7 +20,7 @@ const SwitchBoolean = (props: BooleanProps) => {
   const [switchState, setSwitchState] = useState(false);
   useState(() => {
     let propval = false;
-    if(props.values && props.values[0] && props.values[0].value!="-1"){
+    if(props.values && props.values[0] && props.values[0].value!=="-1"){
       propval = true;
     }
     setSwitchState(propval)

@@ -2,6 +2,7 @@
 
 import { FormControl, TextInput, Table, TableHead, TableRow, TableCell, TableBody } from "@contentful/f36-components";
 //import { useState } from "react";
+
 import { ItemValues,DataValidation } from "../itemTypes";
 //import { useDebugValue } from "react";
 
@@ -21,16 +22,14 @@ interface EvaluationProps {
 interface EnumValuesProps {
   label: string; key: any
 }
-
+const DefaultValue:string = "3";
 interface EnumValuesProps extends Array<EnumValuesProps> { }
 // const isValid = () => {
 //   return true;
 // }
 //const rating = TextInput;
 const Evaluation = (props: EvaluationProps) => {
-  // useState(()=>{
-  //   console.log('Age charged : ',props)
-  // })
+
   var min=0;
   var max=100;
   
@@ -42,7 +41,13 @@ const Evaluation = (props: EvaluationProps) => {
   }
   return (
     <>
-      <Table>
+      <Table style={{
+        display: 'block',
+        width: '650px',
+        height: 'auto',
+        overflowX: 'auto',
+        whiteSpace: 'nowrap'
+        }}>
         <TableHead>
           <TableRow>
             {props.data.values.map((item) => {
@@ -53,16 +58,16 @@ const Evaluation = (props: EvaluationProps) => {
         <TableBody>
           <TableRow>
           {props.data.values.map((item, index) => {
-            let inputvalue:string = "3";//valeur par défaut
+            let inputvalue:string = DefaultValue;
             if(props.values){
               const idxvalues:number = props.values.findIndex((i) => i.key === item.key);
               if(idxvalues>=0){
                 inputvalue = props.values[idxvalues].value;
-              }
+              } 
             }            
               return <TableCell>
               <FormControl >
-                <TextInput id={`${item.key}_${index}`} css="number" size="small" name={item.label} value={inputvalue}  onChange={(e) => props.onChange(props.type,e.target.id, e.target.value)} type="number" min={min} max={max} />
+                <TextInput id={`${item.key}_${index}`} css="number" size="small" name={item.label} value={inputvalue}  onChange={(e) => props.onChange(props.type,e.target.id, e.target.value)} type="number" min={min} max={max} className="inputEvaluation"/>
               </FormControl>
             </TableCell>;
             })}

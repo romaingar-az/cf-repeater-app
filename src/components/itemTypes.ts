@@ -7,7 +7,7 @@ export interface Item {
 export interface ItemValues extends Array<ItemValue>{}
 export interface ItemValue {
     key: string;
-    value: string;
+    value: any;
 }
 export interface DataValidation {
     min?:number;
@@ -15,15 +15,18 @@ export interface DataValidation {
 }
 export interface  ObjComponent  {
     type: string;
-    data: DataObject;
+    data: DataObject;    
     onChange?:(ftype: string, id: string, value: string) => void;
     values?: ItemValues;
+    validation?:DataValidation;
 };
 type DataObject = {
     title?: string;
     type:string;
     text: string;
-    values: AnyObject
+    values: AnyObject;
+    priority?:number;
+    defaultValue?:string;
 };
 
 export interface AnyObject {

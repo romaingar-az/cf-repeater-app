@@ -8,3 +8,9 @@ div {
   font: inherit;
   vertical-align: baseline;
 }
+.odd {
+background-color: #F7F9FA;
+}
+.inputEvaluation {
+  min-width : 60px;
+}

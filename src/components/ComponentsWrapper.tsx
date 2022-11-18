@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table} from "@contentful/f36-components";
+import { Table,SectionHeading} from "@contentful/f36-components";
 import DynamicComponent from "./DynamicComponent";
 import {ItemValue,ObjComponent} from './itemTypes'
 // type State = {
@@ -11,7 +11,9 @@ type AppProps  = {
     values: any;
     onChange:(id:string,ftype:string,item: ItemValue,itemId:string) => void;
 };
-
+interface EnumValuesProps {
+    label: string; key: any
+  }
 
 const criteriaComponents = [
     {
@@ -19,7 +21,9 @@ const criteriaComponents = [
         data: {
             type:"evaluation",
             title: "Age",
-            text: "Text",
+            text: "Quel est votre âge ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key: "1-18", label: "Moins de 18 ans" },
                 { key: "18-29", label: "18 à 29 ans" },
@@ -40,20 +44,24 @@ const criteriaComponents = [
         type:"pregnant",
         data: {
             type:"evaluation",
-            title:"Etes-vous enceinte ?",
-            text:"",
+            title:"",
+            text:"Etes-vous enceinte ?",
+            priority:100,
+            defaultValue:"3",
             values: [
-                { key: "yes", label: "Oui" },
-                { key: "No", label: "Non" }
+                { key: "true", label: "Oui" },
+                { key: "false", label: "Non" }
             ]
         }
     },
     {
-        type: "peau",
+        type: "skin",
         data: {
             type:"evaluation",
             title: "Type de peau",
-            text: "Text",
+            text: "Votre peau est :",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key: "seche", label: "Sèche" },
                 { key: "deshydrate", label: "Déshydratée" },
@@ -73,7 +81,9 @@ const criteriaComponents = [
         data:{
             type:"evaluation",
             title:"",
-            text:"texte",
+            text:"Vous rasez-vous la barbe ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"daily", label:"Quotidiennement au rasoir - rasage à blanc"},
                 { key:"sometime", label:"Occasionnellement - barbe de 5 jours"},
@@ -88,11 +98,16 @@ const criteriaComponents = [
     },
     {
         type:"makeup",
-        data: {
-            type:"switch-boolean",
-            title:"Vous maquillez-vous ?",
-            text:"",
-            values:[true,false]
+        data: {            
+            type:"evaluation",
+            title:"Maquillage",
+            text:"Vous maquillez-vous ?",
+            priority:100,
+            defaultValue:"3",
+            values: [
+                { key: "true", label: "Oui" },
+                { key: "false", label: "Non" }
+            ]
         }
     },
     {
@@ -100,7 +115,9 @@ const criteriaComponents = [
         data:{
             type:"evaluation",
             title:"",
-            text:"texte",
+            text:"À quelle fréquence (vous maquillez-vous ?)",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"daily", label:"Quotidiennement"},
                 { key:"sometime", label:"Occasionnellement"},
@@ -116,8 +133,10 @@ const criteriaComponents = [
         type:"sun-frequency",
         data:{
             type:"evaluation",
-            title:"",
-            text:"texte",
+            title:"Soleil",
+            text:"À quelle fréquence êtes-vous exposé.e au soleil 🌞 ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"daily", label:"Quotidiennement"},
                 { key:"sometime", label:"Occasionnellement"},
@@ -135,6 +154,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"Tout le monde est concerné mais nous ne sommes pas tous égaux face au soleil. Comment qualifieriez-vous votre peau ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"black-skin", label:"Peau très foncée à noire, ne brûle jamais au soleil."},
                 { key:"mat-skin", label:"Peau très mate, brûle très rarement au soleil avec un bronzage intense."},
@@ -155,6 +176,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"Sélectionnez jusqu'à 3 zones du visage que vous souhaitez traiter particulièrement ? (ajouter un schéma)",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"forehead", label:"Front"},	
                 { key:"eye-contour", label:"Contour des yeux"},
@@ -176,6 +199,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"Parmi ces préoccupations, choisissez-en jusqu'à 3 qui vous importent le plus.",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"wrinkles", label:"Rides/Ridules"},
                 { key:"dark-circles", label:"Cernes, poches"},	
@@ -203,6 +228,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"Quelle est selon vous la cause de vos tâches ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"old-wounds", label:"D'anciennes petites blessures"},	
                 { key:"acne", label:"L'acné	"},
@@ -220,6 +247,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"En ce qui concerne vos boutons, à quoi ressemblent-ils ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"red-pimples-group", label:"Groupes de petits boutons rouges	"},	
                 { key:"big-red-pimples", label:"Gros boutons rouges"},		
@@ -237,6 +266,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"Quel est votre traitement actuel ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"anti-acne-ointments", label:"Pommades anti-acné (Parapharmacie)"},	
                 { key:"contraceptive-pill", label:"Pilule contraceptive"},	
@@ -254,10 +285,19 @@ const criteriaComponents = [
     {
         type:"solar-filter",
         data: {
-            type:"switch-boolean",
+            type:"evaluation",
             title:"	",
             text:"Utilisez-vous un filtre solaire et/ou une crème hydratante au quotidien ?",
-            values:[true,false]
+            priority:100,
+            defaultValue:"3",
+            values: [
+                { key: "true", label: "Oui" },
+                { key: "false", label: "Non" }
+            ],
+            validation: {
+                min:1,
+                max:5
+            }
         }
     },
     {
@@ -266,6 +306,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"",
             text:"En général, vous préférez une texture de ...",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"gel", label:"Gel"},
                 { key:"oil", label:"Huile"},
@@ -281,18 +323,29 @@ const criteriaComponents = [
     },{
         type:"smell",
         data: {
-            type:"switch-boolean",
+            type:"evaluation",
             title:"",
             text:"Il y-a-il une odeur que souhaiteriez éviter ?",
-            values:[true,false]
+            priority:100,
+            defaultValue:"3",
+            values: [
+                { key: "true", label: "Oui, voir la liste" },
+                { key: "false", label: "Non" }
+            ],
+            validation: {
+                min:1,
+                max:5
+            }
         }
     },
     {
         type:"specific-smell",
         data:{
             type:"evaluation",
-            title:"Odeur spécifique à éviter",
-            text:"",
+            title:"Odeur",
+            text:"Quelle odeur souhaitez-vous éviter ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"rose", label:"Rose"},
                 { key:"lavande", label:"Lavande"},
@@ -312,18 +365,29 @@ const criteriaComponents = [
         }
     },{
         type:"cosmetics-reactions",
+        priority:100,
+        defaultValue:"3",
         data: {
-            type:"switch-boolean",
+            type:"evaluation",
             title:"",
             text:"Avez-vous déjà mal réagi face à des produits cosmétiques ?",
-            values:[true,false]
+            values:[
+                { key: "true", label: "Oui" },
+                { key: "false", label: "Non" }
+            ],
+            validation: {
+                min:1,
+                max:5
+            }
         }
     },{
         type:"product-reactions",
         data:{
             type:"evaluation",
-            title:"A quel type de produit ?",
-            text:"",
+            title:"",
+            text:"A quel type de produit ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"active", label:"Un principe actif"},
                 { key:"essential-oil", label:"Une huile essentielle"}
@@ -338,8 +402,10 @@ const criteriaComponents = [
         type:"diy-recipe",
         data:{
             type:"evaluation",
-            title:"Etes vous pret à réaliser une ou plusieurs recette beauté maison adaptées à votre peau ?",
-            text:"",
+            title:"",
+            text:"Etes vous pret à réaliser une ou plusieurs recette beauté maison adaptées à votre peau ?",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"yes-recipe", label:"Oui, totalement"},
                 { key:"easy-recipe", label:"Oui, mais uniquement des recettes faciles et rapides"},
@@ -357,6 +423,8 @@ const criteriaComponents = [
             type:"evaluation",
             title:"En savoir plus ?",
             text:"",
+            priority:100,
+            defaultValue:"3",
             values: [
                 { key:"pregnant-precautions", label:"Sur les précautions à prendre en cosmétique lors de la grossesse ?"},
                 { key:"sun-precautions", label:"Les précautions à prendre liés au soleil"}
@@ -382,23 +450,45 @@ const ComponentsWrapper = ({criteria, itemId, onChange, values}: AppProps) => {
     //     this.getComponents();
     //   };
     useState(() => {
-        console.log('New component ',criteria,values);
+        //console.log('New component ',criteria,values);
+        let currentComponent: ObjComponent | undefined = criteriaComponents.find((obj: ObjComponent) => obj.type === criteria);
+        if(currentComponent && currentComponent.data.values) {
+           
+            let result = currentComponent.data.values.filter((o1:ItemValue) => !values.some((o2:ItemValue) => o1.key === o2.key));
+            if(result.length){
+               
+               result.forEach((res:EnumValuesProps) => {
+                var item:ItemValue = {
+                    key:res.key,
+                    value: (currentComponent &&  currentComponent.data.defaultValue)?currentComponent.data.defaultValue:0
+                };
+                if(currentComponent){
+                    let idcomp=currentComponent.data.values.findIndex((val:ItemValue)=>val.key===item.key);
+                    console.log('set value for ',idcomp,criteria,item,itemId); 
+                    onChange(idcomp,currentComponent.type,item,itemId);
+                }
+              });
+            }
+            
+        }
+        
+
     });
-    const onChangeTest = (ftype: string, id: string, newvalue: string) => {
-        console.log('On Change :');
-        console.table({
-            "id":id,
-            "ftype":ftype,
-            "newvalue":newvalue,
-            "itemId":itemId
-        });
+    const onChangeComponent = (ftype: string, id: string, newvalue: string) => {
+        // console.log('On Change :');
+        // console.table({
+        //     "idcomp":id,
+        //     "ftype":ftype,
+        //     "newvalue":newvalue,
+        //     "itemId":itemId
+        // });
         var idcomp=id;
         const curCriteria = criteriaComponents.find((crit)=>crit.type===ftype);
         var item:ItemValue = {
             key:id,
             value: newvalue
         };
-        if(curCriteria && curCriteria.data.type!="boolean"){
+        if(curCriteria && curCriteria.data.type!=="boolean"){
             const repid =id.split('_');
             item = {
                 key:repid[0],
@@ -423,7 +513,7 @@ const ComponentsWrapper = ({criteria, itemId, onChange, values}: AppProps) => {
     //     this.setState({ components: criteriaComponents });
     //   }
     if (component !== undefined) {
-        component.onChange=onChangeTest;
+        component.onChange=onChangeComponent;
 
         return (
             // const { components } = this.state;
@@ -442,6 +532,7 @@ const ComponentsWrapper = ({criteria, itemId, onChange, values}: AppProps) => {
                     </FormControl>
                 </Table.Cell> */}
                 <Table.Cell colSpan={3}>
+                    <SectionHeading>{component.data.text}</SectionHeading>
                     <DynamicComponent  {...component} values={values}/>
                 </Table.Cell>
                 {/* </Form> */}
